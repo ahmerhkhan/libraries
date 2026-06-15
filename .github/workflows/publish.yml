@@ -5,6 +5,9 @@ on:
     types: [published]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build_wheels:
     name: Build ${{ matrix.package }} on ${{ matrix.os }}
@@ -18,11 +21,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         package: [pypsx, pytrader]
         include:
-          # Attach python_versions to each package via matching include entries
+          # Attach python_versions and full test_requires to each package
           - package: pypsx
             python_versions: "cp39-* cp310-* cp311-* cp312-*"
+            test_requires: "requests beautifulsoup4 lxml loguru pandas numpy"
           - package: pytrader
             python_versions: "cp310-* cp311-* cp312-*"
+            test_requires: "pydantic requests httpx sqlalchemy ta tzdata fastapi uvicorn pandas numpy"
 
     steps:
       - uses: actions/checkout@v4
@@ -61,9 +66,14 @@ jobs:
           # Quotes around version specs are required on Windows (bare >= is a redirect).
           CIBW_BEFORE_BUILD: 'python -m pip install "Cython>=3.0" "setuptools>=68" wheel'
 
-          # Smoke-test the wheel immediately after building it
-          CIBW_TEST_REQUIRES: "pandas numpy"
+          # Smoke-test the wheel immediately after building it.
+          # All runtime deps are listed explicitly — relying on wheel METADATA alone
+          # is unreliable with the dual setup.py + pyproject.toml layout.
+          CIBW_TEST_REQUIRES: ${{ matrix.test_requires }}
           CIBW_TEST_COMMAND: "python -c \"import ${{ matrix.package }}; print('${{ matrix.package }} OK:', ${{ matrix.package }}.__version__)\""
+          # Skip x86_64 tests on Apple Silicon runners — x86_64 wheels are still built
+          # and uploaded; testing them under arch -x86_64 (Rosetta 2) is fragile.
+          CIBW_TEST_SKIP: "*-macosx_x86_64"
 
           # No binary relinking needed (pure Python deps, no compiled shared libs)
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
