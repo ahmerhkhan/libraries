@@ -1,6 +1,6 @@
 # PyPSX - Pakistan Stock Exchange Data Library (v3)
 
-A clean, simple Python library to fetch and analyze Pakistan Stock Exchange (PSX) data from official DPS endpoints. Get real-time market data, historical prices, and powerful analysis tools all in one package.
+A clean, simple Python library to fetch and analyze Pakistan Stock Exchange (PSX) data. Get real-time market data, historical prices, and powerful analysis tools all in one package.
 
 ## Installation
 
@@ -516,17 +516,6 @@ historical = ticker.get_historical(
 )
 print(historical.head())
 ```
-
-## Data Sources
-
-PyPSX uses official Pakistan Stock Exchange DPS endpoints:
-- Market Watch: `https://dps.psx.com.pk/market-watch`
-- Sector Summary: `https://dps.psx.com.pk/sector-summary/sectorwise`
-- Indices: `https://dps.psx.com.pk/indices/{INDEX}`
-- Trading Board: `https://dps.psx.com.pk/trading-board/REG/main`
-- Performers: `https://dps.psx.com.pk/performers`
-- Timeseries: `https://dps.psx.com.pk/timeseries/int/{SYMBOL}`, `.../eod/{SYMBOL}`
-- Historical OHLCV: `https://dps.psx.com.pk/historical`
 
 ## Examples
 

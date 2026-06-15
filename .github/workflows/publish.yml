@@ -4,27 +4,67 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write   # Required for OIDC trusted publishing
+  build-wheels:
+    name: Build ${{ matrix.package.name }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        package:
+          - name: pypsx
+            python_build: "cp39-* cp310-* cp311-* cp312-*"
+            test_requires: "requests beautifulsoup4 lxml loguru pandas numpy"
+          - name: pytrader
+            python_build: "cp310-* cp311-* cp312-*"
+            test_requires: "pydantic requests httpx sqlalchemy ta tzdata fastapi uvicorn pandas numpy"
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up QEMU for Linux aarch64
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
         with:
-          python-version: "3.11"
+          platforms: arm64
 
-      - name: Install build tools
-        run: pip install build
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.19.1
+        with:
+          package-dir: ./${{ matrix.package.name }}
+          output-dir: dist/
+        env:
+          CIBW_BUILD: ${{ matrix.package.python_build }}
+          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+          CIBW_ARCHS_LINUX: "x86_64 aarch64"
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+          CIBW_ARCHS_WINDOWS: "AMD64"
+          CIBW_BEFORE_BUILD: 'pip install "cython>=3.0" setuptools wheel'
+          CIBW_TEST_REQUIRES: ${{ matrix.package.test_requires }}
+          CIBW_TEST_COMMAND: "python -c \"import ${{ matrix.package.name }}; print('OK:', ${{ matrix.package.name }}.__version__)\""
+          CIBW_TEST_SKIP: "*-macosx_x86_64 *_aarch64"
 
-      - name: Build pypsx wheel
-        run: python -m build --wheel ./pypsx --outdir dist/
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.package.name }}-${{ matrix.os }}
+          path: dist/*.whl
 
-      - name: Build pytrader wheel
-        run: python -m build --wheel ./pytrader --outdir dist/
+  publish:
+    name: Publish to PyPI
+    needs: [build-wheels]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "wheels-*"
+          merge-multiple: true
+          path: dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
