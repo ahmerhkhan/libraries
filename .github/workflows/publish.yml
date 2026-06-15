@@ -12,8 +12,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Both dimensions must be explicit so GitHub creates a full cross-product
+        # (6 jobs: 3 OS x 2 packages). Using only `include` for package would
+        # broadcast both entries to each OS instead of creating separate jobs.
         os: [ubuntu-latest, windows-latest, macos-latest]
+        package: [pypsx, pytrader]
         include:
+          # Attach python_versions to each package via matching include entries
           - package: pypsx
             python_versions: "cp39-* cp310-* cp311-* cp312-*"
           - package: pytrader
@@ -52,9 +57,9 @@ jobs:
           # Windows: x86_64 only
           CIBW_ARCHS_WINDOWS: "AMD64"
 
-          # Install Cython before each build (inside each isolated build container)
-          # Quotes around version specs required on Windows — bare >= is a shell redirect
-          CIBW_BEFORE_BUILD: 'pip install --upgrade pip "Cython>=3.0" "setuptools>=68" wheel'
+          # Use python -m pip to avoid pip 26.x refusing self-upgrade via bare `pip`.
+          # Quotes around version specs are required on Windows (bare >= is a redirect).
+          CIBW_BEFORE_BUILD: 'python -m pip install "Cython>=3.0" "setuptools>=68" wheel'
 
           # Smoke-test the wheel immediately after building it
           CIBW_TEST_REQUIRES: "pandas numpy"
