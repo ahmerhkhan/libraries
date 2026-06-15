@@ -20,11 +20,15 @@ jobs:
 
       - name: Build pypsx wheels
         env:
+          CIBW_ARCHS_WINDOWS: "AMD64"
+          CIBW_BEFORE_BUILD: 'python -m pip install "Cython>=3.0" "setuptools>=68" wheel'
           CIBW_TEST_SKIP: "*"
         run: python -m cibuildwheel ./pypsx --output-dir dist/
 
       - name: Build pytrader wheels
         env:
+          CIBW_ARCHS_WINDOWS: "AMD64"
+          CIBW_BEFORE_BUILD: 'python -m pip install "Cython>=3.0" "setuptools>=68" wheel'
           CIBW_TEST_SKIP: "*"
         run: python -m cibuildwheel ./pytrader --output-dir dist/
 
