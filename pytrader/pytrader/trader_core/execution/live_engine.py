@@ -13,7 +13,8 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, time as dt_time
+import requests
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
@@ -2556,11 +2557,11 @@ class TradingEngine:
             if self._paper_logger:
                 self._paper_logger.log_portfolio_snapshot(
                     timestamp=cycle_end,
-                    cash=float(summary_display.cash),
+                    cash=float(summary.cash),
                     positions_value=float(positions_value),
-                    equity=summary_display.equity,
-                    realized_pnl=float(summary_display.realized_pnl),
-                    unrealized_pnl=float(summary_display.unrealized_pnl),
+                    equity=summary.equity,
+                    realized_pnl=float(summary.realized_pnl),
+                    unrealized_pnl=float(summary.unrealized_pnl),
                 )
             self._log_system_event(
                 event="price_missing",

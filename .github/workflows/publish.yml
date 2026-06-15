@@ -53,7 +53,8 @@ jobs:
           CIBW_ARCHS_WINDOWS: "AMD64"
 
           # Install Cython before each build (inside each isolated build container)
-          CIBW_BEFORE_BUILD: "pip install --upgrade pip Cython>=3.0 setuptools>=68 wheel"
+          # Quotes around version specs required on Windows — bare >= is a shell redirect
+          CIBW_BEFORE_BUILD: 'pip install --upgrade pip "Cython>=3.0" "setuptools>=68" wheel'
 
           # Smoke-test the wheel immediately after building it
           CIBW_TEST_REQUIRES: "pandas numpy"

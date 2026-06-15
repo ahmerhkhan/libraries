@@ -327,7 +327,7 @@ class CSVDataProvider:
                 "open": open_price,
                 "high": high_price,
                 "low": low_price,
-                "close": close_price,
+                "close": close,
                 "volume": volume,
             })
         
