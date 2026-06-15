@@ -1,33 +1,29 @@
-name: Fast Publish (No Keys, No Cost)
+name: Publish to PyPI
 
 on:
   workflow_dispatch:
 
 jobs:
   build-and-publish:
-    name: Local Docker Build and OIDC Publish
-    runs-on: self-hosted
-
+    runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
+      id-token: write   # Required for OIDC trusted publishing
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install cibuildwheel
-        run: pip install cibuildwheel==2.19.1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      - name: Build pyPSX Wheels (Inside Docker)
-        env:
-          CIBW_TEST_SKIP: "*"
-        run: python -m cibuildwheel --platform linux ./pypsx --output-dir dist/
+      - name: Install build tools
+        run: pip install build
 
-      - name: Build pyTrader Wheels (Inside Docker)
-        env:
-          CIBW_TEST_SKIP: "*"
-        run: python -m cibuildwheel --platform linux ./pytrader --output-dir dist/
+      - name: Build pypsx wheel
+        run: python -m build --wheel ./pypsx --outdir dist/
+
+      - name: Build pytrader wheel
+        run: python -m build --wheel ./pytrader --outdir dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
