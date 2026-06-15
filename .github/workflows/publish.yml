@@ -1,112 +1,34 @@
-name: Build and Publish Closed-Source Wheels
+name: Fast Publish (Self-Hosted, No Keys)
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  workflow_dispatch:  # Manual trigger from GitHub UI
 
 jobs:
-  build_wheels:
-    name: Build ${{ matrix.package }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # Both dimensions must be explicit so GitHub creates a full cross-product
-        # (6 jobs: 3 OS x 2 packages). Using only `include` for package would
-        # broadcast both entries to each OS instead of creating separate jobs.
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        package: [pypsx, pytrader]
-        include:
-          # Attach python_versions and full test_requires to each package
-          - package: pypsx
-            python_versions: "cp39-* cp310-* cp311-* cp312-*"
-            test_requires: "requests beautifulsoup4 lxml loguru pandas numpy"
-          - package: pytrader
-            python_versions: "cp310-* cp311-* cp312-*"
-            test_requires: "pydantic requests httpx sqlalchemy ta tzdata fastapi uvicorn pandas numpy"
+  build-and-publish:
+    name: Build & Publish on Self-Hosted Runner
+    runs-on: self-hosted
+    permissions:
+      id-token: write   # Required for OIDC trusted publishing
+      contents: read
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Set up QEMU for Linux aarch64 cross-compilation
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install cibuildwheel
         run: pip install cibuildwheel==2.19.1
 
-      - name: Build wheels
-        working-directory: ${{ matrix.package }}
+      - name: Build pypsx wheels
         env:
-          CIBW_BUILD: ${{ matrix.python_versions }}
+          CIBW_TEST_SKIP: "*"
+        run: python -m cibuildwheel ./pypsx --output-dir dist/
 
-          # Skip musl-based Linux (Alpine) and 32-bit builds
-          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+      - name: Build pytrader wheels
+        env:
+          CIBW_TEST_SKIP: "*"
+        run: python -m cibuildwheel ./pytrader --output-dir dist/
 
-          # macOS: Intel + Apple Silicon
-          CIBW_ARCHS_MACOS: "x86_64 arm64"
-
-          # Linux: x86_64 + aarch64 (Raspberry Pi, AWS Graviton)
-          CIBW_ARCHS_LINUX: "x86_64 aarch64"
-
-          # Windows: x86_64 only
-          CIBW_ARCHS_WINDOWS: "AMD64"
-
-          # Use python -m pip to avoid pip 26.x refusing self-upgrade via bare `pip`.
-          # Quotes around version specs are required on Windows (bare >= is a redirect).
-          CIBW_BEFORE_BUILD: 'python -m pip install "Cython>=3.0" "setuptools>=68" wheel'
-
-          # Smoke-test the wheel immediately after building it.
-          # All runtime deps are listed explicitly — relying on wheel METADATA alone
-          # is unreliable with the dual setup.py + pyproject.toml layout.
-          CIBW_TEST_REQUIRES: ${{ matrix.test_requires }}
-          CIBW_TEST_COMMAND: "python -c \"import ${{ matrix.package }}; print('${{ matrix.package }} OK:', ${{ matrix.package }}.__version__)\""
-          # Skip x86_64 tests on Apple Silicon runners — x86_64 wheels are still built
-          # and uploaded; testing them under arch -x86_64 (Rosetta 2) is fragile.
-          CIBW_TEST_SKIP: "*-macosx_x86_64"
-
-          # No binary relinking needed (pure Python deps, no compiled shared libs)
-          CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
-
-        run: python -m cibuildwheel --output-dir wheelhouse
-
-      - name: Upload wheel artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-${{ matrix.package }}-${{ matrix.os }}
-          path: ${{ matrix.package }}/wheelhouse/*.whl
-          retention-days: 7
-
-  publish:
-    name: Publish to PyPI
-    needs: [build_wheels]
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-    permissions:
-      id-token: write    # Required for OIDC trusted publishing
-
-    steps:
-      - name: Download all wheel artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: "wheels-*"
-          merge-multiple: true
-          path: dist/
-
-      - name: List files to publish
-        run: ls -la dist/
-
-      - name: Publish to PyPI
+      - name: Publish to PyPI (OIDC)
         uses: pypa/gh-action-pypi-publish@release/v1
-        # No password needed — OIDC trusted publisher authenticates automatically
+        with:
+          packages-dir: dist/
