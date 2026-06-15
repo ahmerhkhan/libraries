@@ -1,0 +1,31 @@
+# Build artifacts
+build/
+dist/
+wheelhouse/
+*.egg-info/
+
+# Compiled Cython extensions
+*.pyd
+*.so
+*.c
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Cython annotation files
+*.html
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

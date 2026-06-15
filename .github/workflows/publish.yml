@@ -1,0 +1,92 @@
+name: Build and Publish Closed-Source Wheels
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Build ${{ matrix.package }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - package: pypsx
+            python_versions: "cp39-* cp310-* cp311-* cp312-*"
+          - package: pytrader
+            python_versions: "cp310-* cp311-* cp312-*"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up QEMU for Linux aarch64 cross-compilation
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel==2.19.1
+
+      - name: Build wheels
+        working-directory: ${{ matrix.package }}
+        env:
+          CIBW_BUILD: ${{ matrix.python_versions }}
+
+          # Skip musl-based Linux (Alpine) and 32-bit builds
+          CIBW_SKIP: "*-musllinux* *-win32 *-manylinux_i686"
+
+          # macOS: Intel + Apple Silicon
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+
+          # Linux: x86_64 + aarch64 (Raspberry Pi, AWS Graviton)
+          CIBW_ARCHS_LINUX: "x86_64 aarch64"
+
+          # Windows: x86_64 only
+          CIBW_ARCHS_WINDOWS: "AMD64"
+
+          # Install Cython before each build (inside each isolated build container)
+          CIBW_BEFORE_BUILD: "pip install --upgrade pip Cython>=3.0 setuptools>=68 wheel"
+
+          # Smoke-test the wheel immediately after building it
+          CIBW_TEST_REQUIRES: "pandas numpy"
+          CIBW_TEST_COMMAND: "python -c \"import ${{ matrix.package }}; print('${{ matrix.package }} OK:', ${{ matrix.package }}.__version__)\""
+
+          # No binary relinking needed (pure Python deps, no compiled shared libs)
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
+
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.package }}-${{ matrix.os }}
+          path: ${{ matrix.package }}/wheelhouse/*.whl
+          retention-days: 7
+
+  publish:
+    name: Publish to PyPI
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "wheels-*"
+          merge-multiple: true
+          path: dist/
+
+      - name: List files to publish
+        run: ls -la dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

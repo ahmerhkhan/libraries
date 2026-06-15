@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "Cython>=3.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytrader"
+version = "1.0.0"
+description = "Algorithmic trading SDK for PSX — paper trading, live trading, backtesting, cloud bots"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Proprietary"}
+authors = [
+    {name = "pyPSX", email = "pypsxofficial@gmail.com"}
+]
+keywords = ["trading", "stock", "psx", "pakistan", "simulation", "backtesting", "algorithmic-trading"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    "pydantic>=2.0.0",
+    "httpx>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "pandas>=1.5.0",
+    "numpy>=1.24.0",
+    "ta>=0.11.0",
+    "tzdata>=2024.1",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.23.0",
+]
+
+[project.optional-dependencies]
+jupyter = [
+    "nest-asyncio>=1.5.0",
+]
+
+[project.urls]
+Homepage = "https://pypsx.com"
+Documentation = "https://pypsx.com/docs"
+
+[project.scripts]
+pytrader-paper = "pytrader.cli.paper_trading:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pytrader*"]
+exclude = [
+    "tests*",
+    "scripts*",
+    "*.egg-info*",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.pyi", "py.typed"]
+"pytrader.data.cache" = ["*.sql"]
+"pytrader.dashboard.assets" = ["*"]

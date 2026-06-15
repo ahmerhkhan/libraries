@@ -1,0 +1,44 @@
+# PyTrader SDK Package Manifest
+# This file controls what gets included in the PyPI distribution.
+# For closed-source distribution: only compiled binaries + .pyi stubs are shipped.
+
+include README.md
+include LICENSE
+
+# Include stub files and py.typed marker (required for IDE autocomplete)
+recursive-include pytrader *.pyi
+recursive-include pytrader py.typed
+
+# Keep __init__.py files as plain Python re-exporters
+recursive-include pytrader __init__.py
+
+# Keep enums and exceptions (excluded from Cython compilation)
+include pytrader/utils/enums.py
+include pytrader/utils/exceptions.py
+
+# Keep dashboard assets (HTML/CSS/JS for the local dashboard UI)
+recursive-include pytrader/dashboard/assets *
+
+# Include cache SQL schema
+recursive-include pytrader/data/cache *.sql
+
+# Exclude all other .py implementation files so source code is not leaked
+recursive-exclude pytrader *.py
+
+# Re-include the allowed plain-Python files
+include pytrader/__init__.py
+include pytrader/utils/__init__.py
+include pytrader/data/__init__.py
+include pytrader/trader_core/__init__.py
+include pytrader/dashboard/__init__.py
+include pytrader/cli/__init__.py
+
+# Exclude development/build artefacts
+prune examples
+prune tests
+prune scripts
+prune build
+prune dist
+prune *.egg-info
+recursive-exclude . *.log *.db *.sqlite *.pyc
+exclude .*
