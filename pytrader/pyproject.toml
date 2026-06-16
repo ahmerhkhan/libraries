@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytrader-sdk"
-version = "1.0.1"
+version = "1.0.2"
 description = "Algorithmic trading SDK for PSX — paper trading, live trading, backtesting, cloud bots"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -63,3 +63,6 @@ exclude = [
 "*" = ["*.pyi", "py.typed"]
 "pytrader.data.cache" = ["*.sql"]
 "pytrader.dashboard.assets" = ["*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.c", "*.h"]

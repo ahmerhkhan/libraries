@@ -40,5 +40,5 @@ prune scripts
 prune build
 prune dist
 prune *.egg-info
-recursive-exclude . *.log *.db *.sqlite *.pyc
+recursive-exclude . *.log *.db *.sqlite *.pyc *.c *.h
 exclude .*

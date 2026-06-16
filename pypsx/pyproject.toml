@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pypsx"
-version = "3.1.0"
+version = "3.1.1"
 description = "Pakistan Stock Exchange (PSX) market data library — historical, intraday, fundamentals, sectors"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -51,11 +51,11 @@ Documentation = "https://pypsx.com/docs"
 [project.scripts]
 pypsx = "pypsx:quick_start"
 
-[tool.setuptools]
-include-package-data = true
-
 [tool.setuptools.package-data]
 "*" = ["*.pyi", "py.typed"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.c", "*.h"]
 
 [tool.setuptools.packages.find]
 where = ["."]
