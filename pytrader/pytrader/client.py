@@ -202,6 +202,60 @@ class TradingClient(TelemetryClient):
             return result.get("dividends", [])
         return result if isinstance(result, list) else []
 
+    def get_quote(self, symbol: str) -> Dict[str, Any]:
+        """
+        Return the latest live price snapshot for a PSX symbol.
+
+        Fields: symbol, current, price, change, change_pct, volume, high, low, bid, ask.
+        Data is sourced from the PSX live feed (Redis/AHL); updated every few seconds during market hours.
+        """
+        sym = str(symbol).strip().upper()
+        return self._get(f"/market/snapshot/{sym}")
+
+    def get_market_depth(self, symbol: str) -> Dict[str, Any]:
+        """
+        Return the latest L2 order book snapshot for a PSX symbol.
+
+        Fields: symbol, bids (list of {price, qty, orders}), asks (list of {price, qty, orders}).
+        Returns empty bids/asks outside market hours or if the live feed is not running.
+        """
+        sym = str(symbol).strip().upper()
+        return self._get(f"/market/depth/{sym}")
+
+    def get_recent_trades(self, symbol: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Return recent trade ticks for a PSX symbol from the live feed.
+
+        Each tick dict contains: price, volume, timestamp, and side where available.
+        Returns an empty list outside market hours or if the live feed is not running.
+        """
+        sym = str(symbol).strip().upper()
+        result = self._get(f"/market/trades/{sym}", params={"limit": limit})
+        return result.get("trades", [])
+
+    def _get_ws_token(self) -> str:
+        """
+        Return an api_token suitable for WebSocket ?token= auth.
+
+        When using api_key + secret_key, exchanges them for a ws-compatible token via
+        GET /auth/sdk-token.  Result is cached for the lifetime of this client instance.
+        """
+        cached = getattr(self, "_ws_token_cache", None)
+        if cached:
+            return cached
+        if self.api_token:
+            self._ws_token_cache = self.api_token
+            return self.api_token
+        try:
+            result = self._get("/auth/sdk-token")
+            token = str(result.get("token") or "")
+            if token:
+                self._ws_token_cache = token
+                return token
+        except Exception:
+            pass
+        return ""
+
     def get_commission_rate(self) -> float:
         """Return the user's commission rate percentage, fetching from backend once and caching."""
         if self._commission_rate_pct is None:
@@ -483,8 +537,8 @@ class TradingClient(TelemetryClient):
         ws_base = _sdk_settings.resolve_backend_ws_base(paper=paper)
         url = f"{ws_base}/ws/marketdata/{sym}"
 
-        # Attach auth token as query param (same pattern the backend expects).
-        token = getattr(self, "api_token", None) or ""
+        # Exchange API key for a WS-compatible token (works for all auth methods).
+        token = self._get_ws_token()
         if token:
             url = f"{url}?token={token}"
 
