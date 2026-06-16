@@ -57,7 +57,7 @@ jobs:
     name: Publish pytrader-sdk to PyPI
     needs: [build-windows]
     runs-on: ubuntu-latest
-    environment: pypi-pytrader
+    environment: pypi
     permissions:
       id-token: write
     steps:
