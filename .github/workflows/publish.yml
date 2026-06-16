@@ -4,34 +4,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-linux:
-    name: Linux — ${{ matrix.package.name }}
-    runs-on: self-hosted
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - name: pypsx
-            python_build: "cp39-* cp310-* cp311-* cp312-*"
-          - name: pytrader
-            python_build: "cp310-* cp311-* cp312-*"
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install cibuildwheel
-        run: pip install cibuildwheel==2.19.1
-      - name: Build Linux wheels
-        run: python -m cibuildwheel --platform linux ./${{ matrix.package.name }} --output-dir dist/
-        env:
-          CIBW_BUILD: ${{ matrix.package.python_build }}
-          CIBW_SKIP: "*-musllinux* *-manylinux_i686"
-          CIBW_ARCHS_LINUX: "x86_64"
-          CIBW_BEFORE_BUILD: 'pip install "cython>=3.0" setuptools wheel'
-          CIBW_TEST_SKIP: "*"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wheels-linux-${{ matrix.package.name }}
-          path: dist/*.whl
-
   build-windows:
     name: Windows — ${{ matrix.package.name }}
     runs-on: windows-latest
@@ -65,7 +37,7 @@ jobs:
 
   publish-pypsx:
     name: Publish pypsx to PyPI
-    needs: [build-linux, build-windows]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -73,7 +45,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: "wheels-*-pypsx"
+          pattern: "wheels-windows-pypsx"
           merge-multiple: true
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
@@ -83,7 +55,7 @@ jobs:
 
   publish-pytrader:
     name: Publish pytrader-sdk to PyPI
-    needs: [build-linux, build-windows]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -91,7 +63,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: "wheels-*-pytrader"
+          pattern: "wheels-windows-pytrader"
           merge-multiple: true
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
