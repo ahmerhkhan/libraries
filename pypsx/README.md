@@ -663,4 +663,4 @@ The library maintains backward compatibility:
 
 ## License
 
-MIT License
+Proprietary — All rights reserved. Unauthorized use, copying, or distribution is prohibited.
