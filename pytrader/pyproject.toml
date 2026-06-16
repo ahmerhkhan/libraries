@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytrader-sdk"
-version = "1.0.2"
+version = "1.0.3"
 description = "Algorithmic trading SDK for PSX — paper trading, live trading, backtesting, cloud bots"
 readme = "README.md"
 requires-python = ">=3.10"

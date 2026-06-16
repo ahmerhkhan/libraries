@@ -229,7 +229,7 @@ def load_strategy_from_module(
         return strategy_class(**kwargs)
 
 
-def register_strategy(name: str, strategy_class: type) -> None:
+def register_strategy(name: str, strategy_class: object) -> None:
     """
     Register a custom strategy for reuse.
     
