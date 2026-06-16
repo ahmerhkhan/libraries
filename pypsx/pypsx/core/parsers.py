@@ -470,7 +470,7 @@ def parse_index_constituents_html(html: str) -> pd.DataFrame:
     keep = ['Symbol', 'Name', 'LDCP', 'Current', 'Change', 'Change %', 'IDX WTG %', 'IDX Point', 'Volume', 'Freefloat (M)', 'Market Cap (M)']
     available_cols = [c for c in keep if c in df.columns]
     if available_cols:
-        df = df[available_cols]
+        df = df[available_cols].copy()
     # If no standard columns found, keep all original columns
     if df.empty and len(tables[0]) > 0:
         df = tables[0].copy()
