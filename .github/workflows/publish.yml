@@ -39,7 +39,7 @@ jobs:
     name: Publish pypsx to PyPI
     needs: [build-windows]
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: pypi-pypsx
     permissions:
       id-token: write
     steps:
@@ -57,7 +57,7 @@ jobs:
     name: Publish pytrader-sdk to PyPI
     needs: [build-windows]
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: pypi-pytrader
     permissions:
       id-token: write
     steps:
