@@ -5,27 +5,13 @@ from setuptools.command.build_py import build_py as _build_py
 from Cython.Build import cythonize
 
 
-_SHIP_AS_PY = {
-    # Backend-only engine — excluded from Cython, ships as plain .py
-    "live_engine",
-}
-
-
 class build_py(_build_py):
-    """Exclude .py source files except those that couldn't be Cythonized."""
+    """Exclude .py source files from the wheel — everything is compiled to C extensions."""
     def find_package_modules(self, package, package_dir):
-        modules = super().find_package_modules(package, package_dir)
-        return [(pkg, mod, path) for pkg, mod, path in modules if mod in _SHIP_AS_PY]
+        return []
 
 
-_EXCLUDE = {
-    # Backend-only engine — uses requests/lambda **kwargs patterns incompatible with Cython
-    "pytrader/trader_core/execution/live_engine.py",
-}
-source_files = sorted(
-    f for f in glob.glob("pytrader/**/*.py", recursive=True)
-    if f.replace("\\", "/") not in _EXCLUDE
-)
+source_files = sorted(glob.glob("pytrader/**/*.py", recursive=True))
 
 setup(
     ext_modules=cythonize(

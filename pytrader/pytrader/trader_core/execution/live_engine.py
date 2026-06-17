@@ -13,7 +13,7 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
@@ -261,22 +261,22 @@ class TradingEngine:
         if self.config.warm_start and self.config.api_token and self.config.backend_url:
             # Create minimal API client for PortfolioService
             try:
-                # Use requests session as simple API client
-                api_session = requests.Session()
-                api_session.headers.update({
-                    "X-PyTrader-Token": self.config.api_token,
-                    "x-trading-mode": "live",
-                })
-                # Add base_url attribute for convenience
-                api_session.get = lambda path, **kwargs: requests.Session.get(
-                    api_session, 
-                    f"{self.config.backend_url}{path}", 
-                    headers={
-                        "X-PyTrader-Token": self.config.api_token,
-                        "x-trading-mode": "live",
-                    },
-                    **kwargs
-                )
+                import requests as _requests
+                _token = self.config.api_token
+                _base = self.config.backend_url
+                _hdrs = {"X-PyTrader-Token": _token, "x-trading-mode": "live"}
+                api_session = _requests.Session()
+                api_session.headers.update(_hdrs)
+
+                def _bound_get(path, **kwargs):
+                    return _requests.Session.get(
+                        api_session,
+                        f"{_base}{path}",
+                        headers=_hdrs,
+                        **kwargs
+                    )
+
+                api_session.get = _bound_get
                 portfolio_kwargs["api_client"] = api_session
                 portfolio_kwargs["bot_id"] = self.bot_id
             except Exception as exc:
