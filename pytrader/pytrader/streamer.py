@@ -32,10 +32,18 @@ class Streamer:
         token: Optional[str] = None,
         ws_url: Optional[str] = None,
         paper: bool = True,
+        api_key: Optional[str] = None,
+        secret_key: Optional[str] = None,
     ) -> None:
         base = (ws_url or "").strip() or settings.resolve_backend_ws_base(paper=paper)
         url = base if "/ws/" in base else f"{base.rstrip('/')}/ws/market"
-        self._client = PSXWebSocketClient(ws_url=url, token=token)
+        self._client = PSXWebSocketClient(
+            ws_url=url,
+            token=token,
+            api_key=api_key,
+            secret_key=secret_key,
+            paper=paper,
+        )
 
     def on_tick(self, callback: Callable[[TickData], None]) -> None:
         self._client.register_tick_callback(callback)

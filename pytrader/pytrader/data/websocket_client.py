@@ -90,15 +90,22 @@ class PSXWebSocketClient:
         *,
         ws_url: Optional[str] = None,
         token: Optional[str] = None,
+        api_key: Optional[str] = None,
+        secret_key: Optional[str] = None,
+        paper: bool = True,
         market_type: str = "REG",
         auto_reconnect: bool = True,
         heartbeat_interval: float = 30.0,
     ):
         """
         Initialize WebSocket client.
-        
+
         Args:
             ws_url: WebSocket URL
+            token: Pre-exchanged WS token (legacy)
+            api_key: PYPSX API key (PK_... or AK_...) — preferred over token
+            secret_key: PYPSX secret key paired with api_key
+            paper: True for paper backend, False for live backend
             market_type: Market type to subscribe to (REG, FUT, IDX)
             auto_reconnect: Whether to automatically reconnect on disconnect
             heartbeat_interval: Heartbeat interval in seconds
@@ -108,9 +115,11 @@ class PSXWebSocketClient:
             self.ws_url = ws_url
         else:
             from ..config import settings
-            ws_base = settings.resolve_backend_ws_base(paper=True)
+            ws_base = settings.resolve_backend_ws_base(paper=paper)
             self.ws_url = f"{ws_base}/ws/market"
         self.token = token
+        self.api_key = api_key
+        self.secret_key = secret_key
         self.market_type = market_type
         self.auto_reconnect = auto_reconnect
         self.heartbeat_interval = heartbeat_interval
@@ -155,14 +164,19 @@ class PSXWebSocketClient:
             logger.info(f"Connecting to {self.ws_url}...")
             
             url = self.ws_url
-            tok = (self.token or "").strip()
-            if tok:
+            if self.api_key and self.secret_key:
+                # Direct API key auth — no token exchange needed
                 joiner = "&" if "?" in url else "?"
-                url = f"{url}{joiner}token={tok}"
+                url = f"{url}{joiner}api_key={self.api_key}&secret_key={self.secret_key}"
+            else:
+                tok = (self.token or "").strip()
+                if tok:
+                    joiner = "&" if "?" in url else "?"
+                    url = f"{url}{joiner}token={tok}"
             self.ws = await websockets.connect(
                 url,
-                ping_interval=None,  # We handle heartbeat manually
-                ping_timeout=None,
+                ping_interval=30,
+                ping_timeout=10,
             )
             
             self.is_connected = True

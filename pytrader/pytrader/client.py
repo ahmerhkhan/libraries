@@ -530,29 +530,42 @@ class TradingClient(TelemetryClient):
                 "Install it with: pip install websockets"
             ) from exc
 
-        from .config import settings as _sdk_settings
-
         sym = symbol.strip().upper()
-        paper = (str(self.mode or "PAPER").upper() != "LIVE")
-        ws_base = _sdk_settings.resolve_backend_ws_base(paper=paper)
+        base = self.base_url.rstrip("/")
+        if base.startswith("https://"):
+            ws_base = base.replace("https://", "wss://", 1)
+        elif base.startswith("http://"):
+            ws_base = base.replace("http://", "ws://", 1)
+        else:
+            ws_base = base
         url = f"{ws_base}/ws/marketdata/{sym}"
 
-        # Exchange API key for a WS-compatible token (works for all auth methods).
-        token = self._get_ws_token()
-        if token:
-            url = f"{url}?token={token}"
+        # Prefer direct API key auth (no token exchange round-trip).
+        if self.api_key and self.secret_key:
+            url = f"{url}?api_key={self.api_key}&secret_key={self.secret_key}"
+        else:
+            token = self._get_ws_token()
+            if token:
+                url = f"{url}?token={token}"
 
         reconnect_delay = 1.0
         max_delay = 60.0
 
         while True:
             try:
-                async with websockets.connect(url, ping_interval=None) as ws:
+                async with websockets.connect(url, ping_interval=30, ping_timeout=10) as ws:
                     reconnect_delay = 1.0  # reset backoff on successful connect
                     async for raw in ws:
                         try:
                             tick: Dict[str, Any] = json.loads(raw)
                         except Exception:
+                            continue
+                        # Respond to server-side manual ping messages
+                        if tick.get("type") == "ping":
+                            try:
+                                await ws.send(json.dumps({"type": "pong", "timestamp": tick.get("timestamp")}))
+                            except Exception:
+                                pass
                             continue
                         if on_tick is not None:
                             try:

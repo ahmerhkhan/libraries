@@ -62,6 +62,10 @@ def __getattr__(name: str):
         from .streamer import Streamer
         setattr(module, "Streamer", Streamer)
         return Streamer
+    if name == "LiveFeed":
+        from .live_feed import LiveFeed
+        setattr(module, "LiveFeed", LiveFeed)
+        return LiveFeed
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 # BACKEND-ONLY: These components are for backend internal use only.
@@ -76,7 +80,7 @@ def __getattr__(name: str):
 #     PortfolioService,
 # )
 
-__version__ = "2.1.1"
+__version__ = "2.2.0"
 
 __all__ = [
     # Primary API - account-aware client
@@ -97,6 +101,7 @@ __all__ = [
     "list_strategies",
     "register_strategy",
     "Streamer",
+    "LiveFeed",
     # Utilities
     "indicators",
     # NOTE: Backend-only components (BacktestEngine, TradingEngine, etc.) are NOT exported
