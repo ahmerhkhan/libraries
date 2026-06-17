@@ -27,7 +27,7 @@ def _resolve_trading_api_url(paper: bool) -> str:
     if explicit_base:
         return explicit_base.rstrip("/")
     if paper:
-        return os.getenv("PYPSX_PAPER_API_URL", "https://api.pypsx.com").rstrip("/")
+        return os.getenv("PYPSX_PAPER_API_URL", "https://paper-api.pypsx.com").rstrip("/")
     return os.getenv("PYPSX_LIVE_API_URL", "https://api.pypsx.com").rstrip("/")
 
 
